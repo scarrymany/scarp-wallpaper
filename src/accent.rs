@@ -15,7 +15,7 @@ pub fn dominant(bgra: &[u8]) -> Option<u32> {
     let mut weight = [0.0f32; HUE_BINS];
     let mut sum = [[0.0f32; 3]; HUE_BINS];
 
-    for pixel in bgra.chunks_exact(4) {
+    for pixel in bgra.as_chunks::<4>().0 {
         let rgb = [pixel[2], pixel[1], pixel[0]].map(|c| c as f32 / 255.0);
         let (hue, saturation, value) = hsv(rgb);
         if saturation < MIN_SATURATION || value < MIN_VALUE {
