@@ -34,6 +34,13 @@ impl Rgb {
     pub fn colorref(self) -> COLORREF {
         COLORREF((self.2 as u32) << 16 | (self.1 as u32) << 8 | self.0 as u32)
     }
+
+    /// Mix towards `other`; `t` is clamped to 0..1.
+    pub fn lerp(self, other: Self, t: f32) -> Self {
+        let t = t.clamp(0.0, 1.0);
+        let mix = |a: u8, b: u8| (a as f32 + (b as f32 - a as f32) * t).round() as u8;
+        Self(mix(self.0, other.0), mix(self.1, other.1), mix(self.2, other.2))
+    }
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -170,6 +177,12 @@ impl Canvas<'_> {
         self.shade(r, radius, |d| (0.5 - d).clamp(0.0, 1.0), color);
     }
 
+    /// `fill_round` at partial opacity.
+    pub fn fill_round_alpha(&mut self, r: Rect, radius: f32, color: Rgb, alpha: f32) {
+        let alpha = alpha.clamp(0.0, 1.0);
+        self.shade(r, radius, |d| (0.5 - d).clamp(0.0, 1.0) * alpha, color);
+    }
+
     /// One-pixel border along the inside of a rounded rectangle.
     pub fn stroke_round(&mut self, r: Rect, radius: f32, color: Rgb) {
         self.shade(r, radius, |d| (0.5 - d).clamp(0.0, 1.0) - (-0.5 - d).clamp(0.0, 1.0), color);
@@ -181,8 +194,13 @@ impl Canvas<'_> {
         self.shade(r, radius, |d| (d + 0.5).clamp(0.0, 1.0), background);
     }
 
-    /// Copies a top-down BGRA image of exactly `r.w`x`r.h` pixels.
-    pub fn blit(&mut self, r: Rect, bgra: &[u8]) {
+    /// Blends a top-down BGRA image of exactly `r.w`x`r.h` pixels over the
+    /// current pixels at `alpha`.
+    pub fn blit_alpha(&mut self, r: Rect, bgra: &[u8], alpha: f32) {
+        let alpha = alpha.clamp(0.0, 1.0);
+        if alpha <= 0.0 {
+            return;
+        }
         if bgra.len() != (r.w * r.h * 4) as usize {
             return;
         }
@@ -194,8 +212,9 @@ impl Canvas<'_> {
             let dst_row = (y * self.width) as usize;
             for x in x0..x1 {
                 let s = src_row + (x - r.x) as usize * 4;
-                self.pixels[dst_row + x as usize] =
-                    (bgra[s + 2] as u32) << 16 | (bgra[s + 1] as u32) << 8 | bgra[s] as u32;
+                let src = (bgra[s + 2] as u32) << 16 | (bgra[s + 1] as u32) << 8 | bgra[s] as u32;
+                let dst = &mut self.pixels[dst_row + x as usize];
+                *dst = blend(*dst, src, alpha);
             }
         }
     }

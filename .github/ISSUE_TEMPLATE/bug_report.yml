@@ -1,0 +1,53 @@
+name: Ошибка
+description: Что-то работает не так, как ожидалось
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Спасибо, что сообщаете об ошибке. Чем точнее описание, тем быстрее её получится исправить.
+  - type: input
+    id: version
+    attributes:
+      label: Версия приложения
+      description: Видна в заголовке окна настроек.
+      placeholder: "0.2.0"
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Версия Windows
+      description: "Win + R, `winver`."
+      placeholder: "Windows 11 24H2"
+    validations:
+      required: true
+  - type: dropdown
+    id: source
+    attributes:
+      label: Режим и источник
+      multiple: true
+      options:
+        - Музыка, Spotify
+        - Музыка, браузер
+        - Свой градиент
+        - Не относится к режиму
+  - type: textarea
+    id: what
+    attributes:
+      label: Что произошло
+      description: Что вы делали, что ожидали увидеть и что получилось.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Как повторить
+      placeholder: |
+        1. Открыть настройки
+        2. ...
+  - type: textarea
+    id: extra
+    attributes:
+      label: Дополнительно
+      description: Скриншоты, количество мониторов и масштаб, плеер и браузер.

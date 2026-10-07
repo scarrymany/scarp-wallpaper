@@ -1,5 +1,6 @@
 //! Tray icon, message loop and the bridge between the UI and the worker.
 
+mod anim;
 mod canvas;
 mod window;
 
