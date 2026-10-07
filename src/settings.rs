@@ -26,7 +26,7 @@ pub const PRESETS: [Corners; 6] = [
     [0x0a0a0a, 0x262626, 0x171717, 0x525252],
 ];
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Mode {
     /// Gradient follows the cover of the playing track.
     Music,
