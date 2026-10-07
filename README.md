@@ -106,7 +106,7 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 ```
 
-Релиз собирается автоматически при пуше тега `vX.Y.Z` (workflow `release.yml`): версия тега должна совпадать с `Cargo.toml`, а описание релиза берётся из раздела `CHANGELOG.md`.
+Релиз собирается автоматически при пуше тега `vX.Y.Z` (workflow `release.yml`): версия тега должна совпадать с `Cargo.toml`, а описание релиза берётся из раздела `CHANGELOG.md`. Можно и без тега: Actions → Release → Run workflow выпустит версию из `Cargo.toml` и сам создаст тег.
 
 ## Лицензия
 
