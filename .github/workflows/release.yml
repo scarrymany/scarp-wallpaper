@@ -3,6 +3,9 @@ name: Release
 on:
   push:
     tags: ["v*"]
+    # A merge that bumps the version releases it: the tag is created here.
+    branches: [main]
+    paths: [Cargo.toml]
   # Manual run: releases the version from Cargo.toml and creates its tag
   # on the selected commit.
   workflow_dispatch:
@@ -18,8 +21,37 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  check:
+    name: Version to release
+    runs-on: ubuntu-latest
+    outputs:
+      release: ${{ steps.check.outputs.release }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Is this version released yet
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n 1)
+          if gh release view "v$version" --repo "${{ github.repository }}" > /dev/null 2>&1; then
+            if [ "${{ github.ref_type }}" = "branch" ] && [ "${{ github.event_name }}" = "push" ]; then
+              echo "v$version уже выпущена, релиз не нужен"
+              echo "release=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "::error::Релиз v$version уже существует"
+            exit 1
+          fi
+          echo "release=true" >> "$GITHUB_OUTPUT"
+
   release:
     name: GitHub Release
+    needs: check
+    if: needs.check.outputs.release == 'true'
     runs-on: windows-latest
     defaults:
       run:
@@ -39,7 +71,7 @@ jobs:
         id: version
         run: |
           $version = (Select-String -Path Cargo.toml -Pattern '^version = "(.+)"' | Select-Object -First 1).Matches.Groups[1].Value
-          if ("${{ github.event_name }}" -eq "push") {
+          if ("${{ github.ref_type }}" -eq "tag") {
             $tag = "${{ github.ref_name }}"
             if ($tag -ne "v$version") { throw "Тег $tag не совпадает с версией в Cargo.toml ($version)" }
           } else {

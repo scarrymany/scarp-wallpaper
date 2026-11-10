@@ -2,6 +2,7 @@
 
 mod anim;
 mod canvas;
+mod theme;
 mod window;
 
 use std::cell::{Cell, OnceCell, RefCell};
@@ -262,13 +263,17 @@ fn show_tray_menu(hwnd: HWND) {
 /// Saves settings changed in the window and lets the worker re-render.
 fn apply_settings(settings: Settings) {
     with_app(|app| {
-        if app.shared.settings() == settings {
+        let previous = app.shared.settings();
+        if previous == settings {
             return;
         }
         if let Err(error) = app.shared.update_settings(settings) {
             app.shared.set_status(Status::error(format!("Не удалось сохранить настройки: {error}")));
         }
-        let _ = app.events.send(Event::SettingsChanged);
+        // The theme only restyles the window; the wallpaper stays as it is.
+        if (Settings { theme: previous.theme, ..settings }) != previous {
+            let _ = app.events.send(Event::SettingsChanged);
+        }
     });
 }
 

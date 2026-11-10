@@ -51,9 +51,38 @@ impl Mode {
     }
 }
 
+/// Look of the settings window.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum Theme {
+    /// Monochrome dark, the scarp.cc look.
+    Graphite,
+    /// Dark, tinted with the color of the cover.
+    Accent,
+    /// Light, tinted with the color of the cover.
+    Pastel,
+}
+
+impl Theme {
+    pub const ALL: [Self; 3] = [Self::Graphite, Self::Accent, Self::Pastel];
+
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Graphite => "graphite",
+            Self::Accent => "accent",
+            Self::Pastel => "pastel",
+        }
+    }
+
+    fn parse(value: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|theme| theme.as_str() == value)
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Settings {
     pub mode: Mode,
+    /// `None` until the user picks one on first launch.
+    pub theme: Option<Theme>,
     pub colors: Corners,
     pub spotify: bool,
     pub browsers: bool,
@@ -67,6 +96,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             mode: Mode::Music,
+            theme: None,
             colors: PRESETS[0],
             spotify: true,
             browsers: true,
@@ -93,6 +123,7 @@ impl Settings {
             let value = value.trim();
             match key.trim() {
                 "mode" => settings.mode = Mode::parse(value).unwrap_or(settings.mode),
+                "theme" => settings.theme = Theme::parse(value).or(settings.theme),
                 "colors" => settings.colors = parse_colors(value).unwrap_or(settings.colors),
                 "spotify" => settings.spotify = parse_bool(value, settings.spotify),
                 "browsers" => settings.browsers = parse_bool(value, settings.browsers),
@@ -111,8 +142,9 @@ impl Settings {
             fs::create_dir_all(dir)?;
         }
         let colors = self.colors.map(|c| format!("{c:06x}")).join(",");
+        let theme = self.theme.map(|t| format!("theme={}\n", t.as_str())).unwrap_or_default();
         let text = format!(
-            "mode={}\ncolors={colors}\nspotify={}\nbrowsers={}\nblur={}\nsaturation={}\nbrightness={}\nrestore_on_exit={}\n",
+            "mode={}\n{theme}colors={colors}\nspotify={}\nbrowsers={}\nblur={}\nsaturation={}\nbrightness={}\nrestore_on_exit={}\n",
             self.mode.as_str(),
             self.spotify,
             self.browsers,
@@ -165,6 +197,7 @@ mod tests {
         let path = std::env::temp_dir().join(format!("scarp-wallpaper-settings-{}.ini", std::process::id()));
         let settings = Settings {
             mode: Mode::Custom,
+            theme: Some(Theme::Pastel),
             colors: [0x000000, 0xffffff, 0x123456, 0xabcdef],
             spotify: false,
             blur: 3,
@@ -183,7 +216,7 @@ mod tests {
         let path = std::env::temp_dir().join(format!("scarp-wallpaper-invalid-{}.ini", std::process::id()));
         fs::write(
             &path,
-            "blur=99\nsaturation=abc\nspotify=maybe\nbrowsers=false\nmode=disco\ncolors=ff0000,00ff00\nnoise\n",
+            "theme=neon\nblur=99\nsaturation=abc\nspotify=maybe\nbrowsers=false\nmode=disco\ncolors=ff0000,00ff00\nnoise\n",
         )
         .unwrap();
         let loaded = Settings::load(&path);
